@@ -55,6 +55,15 @@ String _sensor_energy_reset_ts = String();
 // Private
 // -----------------------------------------------------------------------------
 
+
+    #if SENSOR_CALLBACK_SUPPORT
+    std::vector<TSensorCallback> tp_sensor_callbacks;
+    void sensorRegisterCb(TSensorCallback cb) {
+        tp_sensor_callbacks.push_back(cb);
+    }
+
+    #endif
+
 unsigned char _magnitudeDecimals(unsigned char type) {
 
     // Hardcoded decimals (these should be linked to the unit, instead of the magnitude)
@@ -1214,6 +1223,12 @@ void _sensorReport(unsigned char index, double value) {
 
     char buffer[10];
     dtostrf(value, 1-sizeof(buffer), decimals, buffer);
+
+    #if SENSOR_CALLBACK_SUPPORT
+    for (unsigned char i=0; i<tp_sensor_callbacks.size(); i++) {
+        (tp_sensor_callbacks[i])(index, value);
+    }
+    #endif 
 
     #if BROKER_SUPPORT
         brokerPublish(BROKER_MSG_TYPE_SENSOR ,magnitudeTopic(magnitude.type).c_str(), magnitude.local, buffer);
