@@ -22,6 +22,9 @@ typedef struct {
 } button_t;
 
 std::vector<button_t> _buttons;
+#if BUTTON_CALLBACK_SUPPORT
+std::vector<void (*)(const unsigned int id, const unsigned char event)> _button_callbacks;
+#endif
 
 #if MQTT_SUPPORT
 
@@ -96,6 +99,10 @@ void buttonEvent(unsigned int id, unsigned char event) {
 
     DEBUG_MSG_P(PSTR("[BUTTON] Button #%u event %u\n"), id, event);
     if (event == 0) return;
+
+#if BUTTON_CALLBACK_SUPPORT
+    buttonCallback(id,event);
+#endif
 
     unsigned char action = buttonAction(id, event);
 
@@ -331,4 +338,17 @@ void buttonLoop() {
 
 }
 
+#if BUTTON_CALLBACK_SUPPORT
+// -----------------------------------------------------------------------------
+
+void buttonRegister(void (*callback)(const unsigned int id, const unsigned char event)) {
+    _button_callbacks.push_back(callback);
+}
+
+void buttonCallback(const unsigned int id, const unsigned char event) {
+    for (unsigned char i=0; i<_button_callbacks.size(); i++) {
+        (_button_callbacks[i])(id,event);
+    }
+}
+#endif
 #endif // BUTTON_SUPPORT
